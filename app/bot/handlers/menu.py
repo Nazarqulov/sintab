@@ -2,11 +2,12 @@
 
 from aiogram import F, Router
 from aiogram.enums import ChatType
-from aiogram.filters import Command, StateFilter
+from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bot.handlers import admin, browse, documents, fleet, personal, reports
+from app.bot.handlers import admin, browse, chat, documents, fleet, personal, reports
 from app.bot.keyboards.menu import MenuAction, allowed_sections, main_inline_menu
 from app.core.i18n import t, variants
 from app.db.models import User
@@ -32,6 +33,8 @@ async def open_section(section: str, target: Message, session: AsyncSession, use
         await fleet.show_fuel(target, session, user, lang)
     elif section == "docs":
         await documents.show_docs(target, user, lang)
+    elif section == "chat":
+        await chat.show_chat(target, session, user, lang)
     elif section == "reports":
         await reports.show_reports(target, session, user, lang)
     elif section == "settings":
@@ -58,11 +61,14 @@ async def cb_menu(callback: CallbackQuery, callback_data: MenuAction, session: A
     await callback.answer()
 
 
-REPLY_BUTTONS = {text: key for key in ("alerts", "vehicles", "drivers", "hos", "fuel", "docs", "reports", "settings", "profile", "admin") for text in variants(f"menu.{key}")}
+REPLY_BUTTONS = {text: key for key in ("alerts", "vehicles", "drivers", "hos", "fuel", "docs", "chat", "reports", "settings", "profile", "admin") for text in variants(f"menu.{key}")}
 REPLY_BUTTONS.update({text: "home" for text in variants("menu.menu")})
 
 
-@router.message(StateFilter(None), F.text.in_(REPLY_BUTTONS))
-async def on_reply_button(message: Message, session: AsyncSession, user: User, lang: str) -> None:
+# Har qanday holatda: pastdagi tugma bosilsa joriy oqim (qidiruv, chat...) tugaydi — tugma matni
+# chat suhbatdoshiga yoki qidiruvga ketib qolmasin.
+@router.message(F.text.in_(REPLY_BUTTONS))
+async def on_reply_button(message: Message, session: AsyncSession, user: User, lang: str, state: FSMContext) -> None:
+    await state.clear()
     if not await open_section(REPLY_BUTTONS[message.text], message, session, user, lang):
         await message.answer(t("access.no_permission", lang))

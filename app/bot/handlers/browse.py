@@ -12,6 +12,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.bot.handlers.chat import write_button
 from app.bot.handlers.documents import DocNav
 from app.bot.keyboards.alerts import alert_keyboard
 from app.bot.keyboards.menu import home_button
@@ -25,6 +26,7 @@ from app.services.depots import DepotError, list_depots, set_vehicle_depot
 from app.services.samsara.client import SamsaraAPIError, SamsaraClient
 from app.services.samsara.live import LiveStatus, parse_vehicle_stats
 from app.services.scope import can_see_alert, scoped_alerts, scoped_drivers, scoped_vehicles
+from app.services.chat import can_chat
 from app.services.users import has_permission
 
 logger = logging.getLogger(__name__)
@@ -426,6 +428,8 @@ async def driver_card(session: AsyncSession, driver: Driver, user: User, lang: s
         InlineKeyboardButton(text=t("browse.btn_alerts", lang), callback_data=AlertList(flt="all", driver_id=driver.id).pack()),
         InlineKeyboardButton(text=t("browse.btn_docs", lang), callback_data=DocNav(action="list", owner="driver", owner_id=driver.id).pack()),
     ]]
+    if linked is not None and await can_chat(session, user, linked):
+        rows.append([write_button(linked.id, lang)])
     return text, rows
 
 

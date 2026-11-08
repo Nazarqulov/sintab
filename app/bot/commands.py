@@ -31,6 +31,7 @@ USER_COMMANDS: list[CommandSpec] = [
     CommandSpec("hos", (Permission.VIEW_VEHICLES,)),
     CommandSpec("fuel", (Permission.VIEW_VEHICLES,)),
     CommandSpec("docs"),
+    CommandSpec("chat"),
     CommandSpec("reports", (Permission.VIEW_REPORTS,)),
     CommandSpec("stats", (Permission.VIEW_REPORTS,)),
     CommandSpec("settings"),

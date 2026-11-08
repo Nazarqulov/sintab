@@ -6,7 +6,7 @@ To'liq texnik topshiriq: [TZ.md](TZ.md).
 
 **Holat:** 4-bosqich davom etmoqda — 4.1 (til, menyu), 4.2 (guruhlar, routing, digest,
 eskalatsiya), 4.3 (ko'rish, hisobotlar, admin, monitoring, backup), 4.4 (logistika: HOS,
-yoqilg'i, hujjatlar, eslatmalar, smena xulosasi) tayyor. Keyingilari: 4.5 ichki chat,
+yoqilg'i, hujjatlar, eslatmalar, smena xulosasi), 4.5 (ichki chat) tayyor. Keyingilari:
 4.6 Mini App, 5 — deploy.
 
 ## Asosiy buyruqlar
@@ -20,6 +20,7 @@ yoqilg'i, hujjatlar, eslatmalar, smena xulosasi) tayyor. Keyingilari: 4.5 ichki 
 | `/hos` | view_vehicles | haydovchilarning qolgan haydash/smena/sikl soatlari (Driver — o'ziniki) |
 | `/fuel` | view_vehicles | mashinalar yoqilg'i darajasi, eng kami birinchi |
 | `/docs` | hamma (Driver — o'ziniki) | hujjatlar: PDF/Excel/Word/rasm yuklash, yuklab olish, muddat |
+| `/chat` | hamma faol foydalanuvchilar | hamkasblar bilan yozishma: matn, fayl, rasm, ovoz, joylashuv |
 | `/reports`, `/stats` | view_reports | davr bo'yicha statistika; Excel / PDF / CSV eksport |
 | `/settings`, `/profile` | hamma | til, vaqt zonasi, shaxsiy alertlar, jim soatlar |
 | `/mute`, `/unmute` | hamma | shaxsiy bildirishnomalarni vaqtincha o'chirish |
@@ -73,6 +74,15 @@ Tizim sozlamalari (eskalatsiya, digest oynasi, webhook jimligi...) va alert dara
   bugungi alertlar statistikasi.
 
 Chegara va soatlar `/admin` → ⚙️ orqali o'zgartiriladi (0 yoki -1 — o'chirilgan).
+
+## Ichki chat
+
+- `/chat` — kontaktlar (oxirgi suhbatdoshlar yuqorida, qidiruv bor) → suhbat rejimi: yuborilgan har
+  xabar (matn, PDF/Excel, rasm, ovoz, joylashuv...) qabul qiluvchiga yuboruvchining ismi va
+  "💬 Yozish" tugmasi bilan yetkaziladi. Yetkazilgan xabarga oddiy Telegram reply ham javob bo'ladi.
+- Kim kimga yoza oladi: xodimlar o'zaro erkin; haydovchi — o'z deposiga xizmat qiladigan xodimga
+  (Viewer'dan tashqari); haydovchilar o'zaro yozishmaydi; bloklangan/tasdiqlanmaganlar — hech kimga.
+- Haydovchi kartasida "💬 Yozish" tugmasi bor. Yozishmalar `chat_messages` jadvalida saqlanadi (audit).
 
 ## Monitoring
 

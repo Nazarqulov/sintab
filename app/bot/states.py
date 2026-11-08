@@ -21,6 +21,11 @@ class BroadcastFlow(StatesGroup):
     message = State()
 
 
+class ChatFlow(StatesGroup):
+    search = State()
+    compose = State()
+
+
 class DocFlow(StatesGroup):
     search = State()
     file = State()

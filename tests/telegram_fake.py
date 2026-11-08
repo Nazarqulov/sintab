@@ -7,8 +7,8 @@ from typing import Any
 
 from aiogram import Bot
 from aiogram.client.session.base import BaseSession
-from aiogram.methods import AnswerCallbackQuery, EditMessageText, SendMessage, TelegramMethod
-from aiogram.types import CallbackQuery, Chat, Contact, Message, Update
+from aiogram.methods import AnswerCallbackQuery, CopyMessage, EditMessageText, SendMessage, TelegramMethod
+from aiogram.types import CallbackQuery, Chat, Contact, Message, MessageId, Update
 from aiogram.types import User as TgUser
 
 _ids = itertools.count(1)
@@ -28,6 +28,8 @@ class FakeSession(BaseSession):
                 chat=Chat(id=method.chat_id, type="private"),
                 text=method.text,
             )
+        if isinstance(method, CopyMessage):
+            return MessageId(message_id=next(_ids))
         return True
 
     async def stream_content(self, *args: Any, **kwargs: Any) -> AsyncGenerator[bytes, None]:
