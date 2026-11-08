@@ -5,8 +5,9 @@ hisobot va boshqaruvni bitta botda jamlaydigan tizim. Til: o'zbek, rus, ingliz.
 To'liq texnik topshiriq: [TZ.md](TZ.md).
 
 **Holat:** 4-bosqich davom etmoqda — 4.1 (til, menyu), 4.2 (guruhlar, routing, digest,
-eskalatsiya), 4.3 (ko'rish, hisobotlar, admin, monitoring, backup) tayyor. Keyingilari:
-4.4 logistika (HOS, yoqilg'i, hujjatlar), 4.5 ichki chat, 4.6 Mini App, 5 — deploy.
+eskalatsiya), 4.3 (ko'rish, hisobotlar, admin, monitoring, backup), 4.4 (logistika: HOS,
+yoqilg'i, hujjatlar, eslatmalar, smena xulosasi) tayyor. Keyingilari: 4.5 ichki chat,
+4.6 Mini App, 5 — deploy.
 
 ## Asosiy buyruqlar
 
@@ -16,6 +17,9 @@ eskalatsiya), 4.3 (ko'rish, hisobotlar, admin, monitoring, backup) tayyor. Keyin
 | `/alerts` | view_alerts | alertlar (ochiq/yangi/hammasi), kartadan qabul qilish/yopish |
 | `/vehicles`, `/drivers` | view_vehicles | qidiruv, karta, mashinani depoga biriktirish |
 | `/where <mashina>` | view_vehicles | jonli joylashuv, tezlik, dvigatel, yoqilg'i (Samsara API) |
+| `/hos` | view_vehicles | haydovchilarning qolgan haydash/smena/sikl soatlari (Driver — o'ziniki) |
+| `/fuel` | view_vehicles | mashinalar yoqilg'i darajasi, eng kami birinchi |
+| `/docs` | hamma (Driver — o'ziniki) | hujjatlar: PDF/Excel/Word/rasm yuklash, yuklab olish, muddat |
 | `/reports`, `/stats` | view_reports | davr bo'yicha statistika; Excel / PDF / CSV eksport |
 | `/settings`, `/profile` | hamma | til, vaqt zonasi, shaxsiy alertlar, jim soatlar |
 | `/mute`, `/unmute` | hamma | shaxsiy bildirishnomalarni vaqtincha o'chirish |
@@ -55,6 +59,20 @@ Owner botga avval `/start` yozishi kerak — aks holda Telegram unga xabar yetka
 
 Tizim sozlamalari (eskalatsiya, digest oynasi, webhook jimligi...) va alert darajalari
 `/admin` → ⚙️ / 🎚 orqali o'zgartiriladi.
+
+## Logistika
+
+- **HOS:** har 10 daqiqada Samsara `/fleet/hos/clocks`; ishlayotgan haydovchida haydash yoki smena
+  vaqti belgilangan chegaradan (standart 60 daqiqa) kam qolsa — `hos_warning` alert (kuniga bir marta).
+- **Yoqilg'i:** har 30 daqiqada yoqilg'i va GPS yangilanadi; chegaradan (standart 20%) past bo'lsa —
+  `low_fuel` alert (mashina uchun kuniga bir marta).
+- **Hujjatlar:** fayl Telegram serverida (file_id), bazada — egasi (kompaniya/haydovchi/mashina/alert),
+  turi (CDL, medical card, insurance, IFTA, BOL, POD...) va muddat. Muddat 30/14/7/1 kun qolganda va
+  o'tganda Owner/Admin'larga hamda tegishli haydovchiga bir martadan eslatma.
+- **Smena xulosasi:** har kuni belgilangan soatda (standart 18:00, Chicago) Owner/Admin/Manager'larga
+  bugungi alertlar statistikasi.
+
+Chegara va soatlar `/admin` → ⚙️ orqali o'zgartiriladi (0 yoki -1 — o'chirilgan).
 
 ## Monitoring
 

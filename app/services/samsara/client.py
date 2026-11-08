@@ -64,6 +64,10 @@ class SamsaraClient:
             params["vehicleIds"] = ",".join(vehicle_ids)
         return await self._paginate("/fleet/vehicles/stats", params)
 
+    async def get_hos_clocks(self, driver_ids: Iterable[str] | None = None) -> list[dict[str, Any]]:
+        params = {"driverIds": ",".join(driver_ids)} if driver_ids else None
+        return await self._paginate("/fleet/hos/clocks", params)
+
     async def _paginate(self, path: str, params: dict[str, str] | None = None) -> list[dict[str, Any]]:
         query = dict(params or {})
         items: list[dict[str, Any]] = []

@@ -27,12 +27,15 @@ SECTIONS = [
     Section("alerts", (Permission.VIEW_ALERTS,)),
     Section("vehicles", (Permission.VIEW_VEHICLES,)),
     Section("drivers", (Permission.VIEW_VEHICLES,)),
+    Section("hos", (Permission.VIEW_VEHICLES,)),
+    Section("fuel", (Permission.VIEW_VEHICLES,)),
+    Section("docs"),  # haydovchi ham (o'z BOL/POD'lari) — kirish handler'da tekshiriladi
     Section("reports", (Permission.VIEW_REPORTS,)),
     Section("settings"),
     Section("profile"),
     Section("admin", ADMIN_PERMISSIONS),
 ]
-REPLY_SECTIONS = ("alerts", "vehicles", "reports", "settings", "menu")
+REPLY_SECTIONS = ("alerts", "vehicles", "docs", "reports", "settings", "menu")
 
 
 class MenuAction(CallbackData, prefix="mn"):

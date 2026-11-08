@@ -6,7 +6,7 @@ from aiogram.filters import Command, StateFilter
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bot.handlers import admin, browse, personal, reports
+from app.bot.handlers import admin, browse, documents, fleet, personal, reports
 from app.bot.keyboards.menu import MenuAction, allowed_sections, main_inline_menu
 from app.core.i18n import t, variants
 from app.db.models import User
@@ -26,6 +26,12 @@ async def open_section(section: str, target: Message, session: AsyncSession, use
         await browse.show_vehicles(target, session, user, lang)
     elif section == "drivers":
         await browse.show_drivers(target, session, user, lang)
+    elif section == "hos":
+        await fleet.show_hos(target, session, user, lang)
+    elif section == "fuel":
+        await fleet.show_fuel(target, session, user, lang)
+    elif section == "docs":
+        await documents.show_docs(target, user, lang)
     elif section == "reports":
         await reports.show_reports(target, session, user, lang)
     elif section == "settings":
@@ -52,7 +58,7 @@ async def cb_menu(callback: CallbackQuery, callback_data: MenuAction, session: A
     await callback.answer()
 
 
-REPLY_BUTTONS = {text: key for key in ("alerts", "vehicles", "drivers", "reports", "settings", "profile", "admin") for text in variants(f"menu.{key}")}
+REPLY_BUTTONS = {text: key for key in ("alerts", "vehicles", "drivers", "hos", "fuel", "docs", "reports", "settings", "profile", "admin") for text in variants(f"menu.{key}")}
 REPLY_BUTTONS.update({text: "home" for text in variants("menu.menu")})
 
 

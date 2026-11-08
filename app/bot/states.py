@@ -19,3 +19,9 @@ class BrowseSearch(StatesGroup):
 
 class BroadcastFlow(StatesGroup):
     message = State()
+
+
+class DocFlow(StatesGroup):
+    search = State()
+    file = State()
+    expiry = State()

@@ -22,6 +22,9 @@ def upgrade() -> None:
     op.add_column('users', sa.Column('quiet_start', sa.SmallInteger(), nullable=True))
     op.add_column('users', sa.Column('quiet_end', sa.SmallInteger(), nullable=True))
 
+    op.add_column('vehicles', sa.Column('fuel_percent', sa.Float(), nullable=True))
+    op.add_column('vehicles', sa.Column('fuel_updated_at', sa.DateTime(timezone=True), nullable=True))
+
     op.add_column('groups', sa.Column('language', sa.String(length=8), server_default='uz', nullable=False))
     op.add_column('groups', sa.Column('is_escalation', sa.Boolean(), server_default=sa.false(), nullable=False))
 
@@ -102,6 +105,8 @@ def downgrade() -> None:
     for column in ('resolution_note', 'resolution_reason', 'samsara_resolved'):
         op.drop_column('alerts', column)
     op.drop_column('groups', 'is_escalation')
+    op.drop_column('vehicles', 'fuel_updated_at')
+    op.drop_column('vehicles', 'fuel_percent')
     op.drop_column('groups', 'language')
     for column in ('quiet_end', 'quiet_start', 'notify_level'):
         op.drop_column('users', column)

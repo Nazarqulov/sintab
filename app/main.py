@@ -20,6 +20,7 @@ from app.db.models import AlertDelivery
 from app.services.alerts.jobs import run_digest, run_escalations
 from app.services.alerts.sender import AlertSender
 from app.services.backup import TELEGRAM_UPLOAD_LIMIT, latest_backup
+from app.services.fleet_jobs import run_document_reminders, run_fuel_check, run_hos_warnings, run_shift_report
 from app.services.monitoring import OwnerNotifier, check_webhook_silence, mark_once, owner_language
 from app.services.runtime import runtime
 from app.services.samsara.client import SamsaraClient
@@ -65,13 +66,36 @@ def build_scheduler(sender: AlertSender, notifier: OwnerNotifier) -> Scheduler:
         async with AsyncSessionLocal() as session:
             await run_digest(session, bot, datetime.now(UTC))
 
+    async def samsara_job(job) -> None:
+        async with SamsaraClient(settings.samsara_api_token, settings.samsara_api_base_url) as client:
+            async with AsyncSessionLocal() as session:
+                sender.enqueue(await job(session, client, datetime.now(UTC)))
+
+    async def hos_job() -> None:
+        await samsara_job(run_hos_warnings)
+
+    async def fuel_job() -> None:
+        await samsara_job(run_fuel_check)
+
+    async def documents_job() -> None:
+        async with AsyncSessionLocal() as session:
+            await run_document_reminders(session, bot, datetime.now(UTC))
+
+    async def shift_job() -> None:
+        async with AsyncSessionLocal() as session:
+            await run_shift_report(session, bot, datetime.now(UTC))
+
     scheduler.every(60, "escalation", escalation_job)
+    scheduler.every(3600, "document-reminders", documents_job, initial_delay=90)
+    scheduler.every(600, "shift-report", shift_job, initial_delay=120)
     scheduler.every(300, "digest", digest_job)
     scheduler.every(600, "webhook-silence", webhook_silence_job, initial_delay=60)
     if settings.backup_send_to_owner:
         scheduler.every(3600, "backup-send", send_daily_backup, initial_delay=120)
     if settings.samsara_api_token:
         scheduler.every(6 * 3600, "fleet-sync", fleet_sync_job, initial_delay=10)
+        scheduler.every(600, "hos-warnings", hos_job, initial_delay=60)
+        scheduler.every(1800, "fuel-check", fuel_job, initial_delay=45)
     return scheduler
 
 

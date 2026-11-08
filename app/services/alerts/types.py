@@ -10,6 +10,8 @@ class AlertType(str, Enum):
     HARSH_TURN = "harsh_turn"
     SPEEDING = "speeding"
     HOS_VIOLATION = "hos_violation"
+    # Bot o'zi yaratadi (Samsara HOS soatlaridan): haydash/smena vaqti tugashiga oz qoldi.
+    HOS_WARNING = "hos_warning"
     ENGINE_FAULT = "engine_fault"
     LOW_FUEL = "low_fuel"
     MAINTENANCE_DUE = "maintenance_due"
@@ -30,6 +32,7 @@ DEFAULT_SEVERITY: dict[AlertType, Severity] = {
     AlertType.CRASH: Severity.CRITICAL,
     AlertType.PANIC_BUTTON: Severity.CRITICAL,
     AlertType.HOS_VIOLATION: Severity.CRITICAL,
+    AlertType.HOS_WARNING: Severity.WARNING,
     AlertType.ENGINE_FAULT: Severity.CRITICAL,
     AlertType.HARSH_BRAKING: Severity.WARNING,
     AlertType.HARSH_ACCELERATION: Severity.WARNING,

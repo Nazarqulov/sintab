@@ -12,6 +12,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.bot.handlers.documents import DocNav
 from app.bot.keyboards.alerts import alert_keyboard
 from app.bot.keyboards.menu import home_button
 from app.bot.states import BrowseSearch
@@ -144,6 +145,7 @@ async def cb_alert_list(callback: CallbackQuery, callback_data: AlertList, sessi
 def detail_markup(alert: Alert, lang: str) -> InlineKeyboardMarkup:
     markup = alert_keyboard(alert, lang)
     rows = list(markup.inline_keyboard) if markup else []
+    rows.append([InlineKeyboardButton(text=t("browse.btn_alert_docs", lang), callback_data=DocNav(action="list", owner="alert", owner_id=alert.id).pack())])
     rows.append([InlineKeyboardButton(text=t("browse.back_to_list", lang), callback_data=AlertList().pack())])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -243,6 +245,7 @@ async def vehicle_card(session: AsyncSession, vehicle: Vehicle, user: User, lang
     rows = [
         [InlineKeyboardButton(text=t("browse.btn_live", lang), callback_data=VehicleNav(action="live", vehicle_id=vid).pack()),
          InlineKeyboardButton(text=t("browse.btn_alerts", lang), callback_data=AlertList(flt="all", vehicle_id=vid).pack())],
+        [InlineKeyboardButton(text=t("browse.btn_docs", lang), callback_data=DocNav(action="list", owner="vehicle", owner_id=vid).pack())],
     ]
     if await has_permission(user, Permission.MANAGE_SETTINGS):
         rows.append([InlineKeyboardButton(text=t("browse.btn_depot", lang), callback_data=VehicleNav(action="depot", vehicle_id=vid).pack())])
@@ -419,7 +422,10 @@ async def driver_card(session: AsyncSession, driver: Driver, user: User, lang: s
         week=sum(n for _, n in counts),
         events=events,
     )
-    rows = [[InlineKeyboardButton(text=t("browse.btn_alerts", lang), callback_data=AlertList(flt="all", driver_id=driver.id).pack())]]
+    rows = [[
+        InlineKeyboardButton(text=t("browse.btn_alerts", lang), callback_data=AlertList(flt="all", driver_id=driver.id).pack()),
+        InlineKeyboardButton(text=t("browse.btn_docs", lang), callback_data=DocNav(action="list", owner="driver", owner_id=driver.id).pack()),
+    ]]
     return text, rows
 
 

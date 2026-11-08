@@ -8,7 +8,7 @@ from app.bot.commands import GROUP_ADMIN_COMMANDS, GUEST_COMMANDS, USER_COMMANDS
 from app.bot.keyboards.menu import REPLY_SECTIONS, SECTIONS
 from app.core.i18n import CATALOG, DEFAULT_LANGUAGE, LANGUAGES, Text, placeholders, t
 from app.core.permissions import Permission
-from app.db.models import UserRole, UserStatus
+from app.db.models import DocumentOwner, DocumentType, UserRole, UserStatus
 from app.services.alerts.formatter import RESOLUTION_REASONS
 from app.services.alerts.types import AlertType
 from app.services.app_settings import CHOICES
@@ -50,6 +50,8 @@ def test_dynamic_key_families_are_translated():
         + [f"perm.{p.value}" for p in Permission]
         + [f"alert.type.{a.value}" for a in AlertType]
         + [f"alert.reason.{r}" for r in RESOLUTION_REASONS]
+        + [f"docs.type.{d.value}" for d in DocumentType]
+        + [f"docs.owner.{o.value}" for o in DocumentOwner]
         + [f"settings.notify.{level}" for level in NOTIFY_LEVELS]
         + [f"settings.hint.{field}" for field in ("lang", "tz", "notify", "quiet")]
         + [f"cmd.{c.name}" for c in USER_COMMANDS]
