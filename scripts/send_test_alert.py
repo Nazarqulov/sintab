@@ -54,9 +54,9 @@ def build_payload(alert_type: str, vehicle: str, driver: str) -> dict:
                         "vehicle": {"id": f"test-{vehicle}", "name": vehicle},
                         "driver": {"id": f"test-{driver}", "name": driver},
                         "location": {
-                            "latitude": 41.311081,
-                            "longitude": 69.240562,
-                            "formattedAddress": "Amir Temur ko'chasi, Toshkent",
+                            "latitude": 41.878113,
+                            "longitude": -87.629799,
+                            "formattedAddress": "W Jackson Blvd, Chicago, IL",
                         },
                     },
                 }

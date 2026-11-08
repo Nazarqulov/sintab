@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     public_base_url: str | None = None
 
     default_language: str = "uz"
-    default_timezone: str = "Asia/Tashkent"
+    default_timezone: str = "America/Chicago"
     app_host: str = "0.0.0.0"
     app_port: int = 8000
     telegram_webhook_secret_path: str = "telegram-webhook"

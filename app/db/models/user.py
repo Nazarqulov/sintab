@@ -43,7 +43,7 @@ class User(Base):
         SAEnum(UserStatus, name="user_status", values_callable=enum_values), default=UserStatus.PENDING
     )
     language: Mapped[str] = mapped_column(String(8), default="uz")
-    timezone: Mapped[str] = mapped_column(String(64), default="Asia/Tashkent")
+    timezone: Mapped[str] = mapped_column(String(64), default="America/Chicago")
     muted_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
