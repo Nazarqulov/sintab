@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -12,8 +13,14 @@ class Settings(BaseSettings):
 
     samsara_api_token: str | None = None
     samsara_webhook_secret: str | None = None
+    samsara_api_base_url: str = "https://api.samsara.com"
+
+    # polling — lokal sinov (ochiq URL kerak emas); webhook — serverda, PUBLIC_BASE_URL bilan.
+    bot_mode: Literal["polling", "webhook"] = "polling"
+    public_base_url: str | None = None
 
     default_language: str = "uz"
+    default_timezone: str = "Asia/Tashkent"
     app_host: str = "0.0.0.0"
     app_port: int = 8000
     telegram_webhook_secret_path: str = "telegram-webhook"

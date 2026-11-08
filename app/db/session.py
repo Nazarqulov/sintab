@@ -1,13 +1,14 @@
 from collections.abc import AsyncGenerator
 from enum import Enum
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
 
-class Base(DeclarativeBase):
+class Base(AsyncAttrs, DeclarativeBase):
     pass
 
 
@@ -16,7 +17,11 @@ def enum_values(enum_cls: type[Enum]) -> list[str]:
     return [member.value for member in enum_cls]
 
 
-engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+# SQLite (faqat testlarda) ulanishlarni turli event loop'lar orasida qayta ishlata olmaydi.
+_engine_options = (
+    {"poolclass": NullPool} if settings.database_url.startswith("sqlite") else {"pool_pre_ping": True}
+)
+engine = create_async_engine(settings.database_url, **_engine_options)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 

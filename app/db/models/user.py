@@ -52,5 +52,8 @@ class User(Base):
 
     depots: Mapped[list["Depot"]] = relationship(secondary=user_depots, back_populates="users")
     permission_overrides: Mapped[list["PermissionOverride"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan", foreign_keys="PermissionOverride.user_id"
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="PermissionOverride.user_id",
+        lazy="selectin",
     )

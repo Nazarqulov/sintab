@@ -1,4 +1,6 @@
 from app.db.models.alert import Alert, AlertStatus
+from app.db.models.alert_delivery import AlertDelivery, DeliveryStatus
+from app.db.models.alert_mute import AlertMute
 from app.db.models.app_setting import AppSetting
 from app.db.models.audit_log import AuditLog
 from app.db.models.depot import Depot
@@ -11,9 +13,12 @@ from app.db.models.vehicle import Vehicle
 
 __all__ = [
     "Alert",
+    "AlertDelivery",
+    "AlertMute",
     "AlertStatus",
     "AppSetting",
     "AuditLog",
+    "DeliveryStatus",
     "Depot",
     "Driver",
     "Group",

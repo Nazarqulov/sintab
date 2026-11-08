@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from enum import Enum
 
 
@@ -52,3 +53,20 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
 
 def role_has_permission(role: str, permission: Permission) -> bool:
     return permission in ROLE_PERMISSIONS.get(role, set())
+
+
+def effective_permissions(role: str, overrides: Mapping[str, bool] | None = None) -> set[Permission]:
+    """Rol standarti + Owner bergan individual override'lar. Blocked/Pending'ga override ham huquq bermaydi."""
+    if role in ("blocked", "pending"):
+        return set()
+    permissions = set(ROLE_PERMISSIONS.get(role, set()))
+    for name, allowed in (overrides or {}).items():
+        try:
+            permission = Permission(name)
+        except ValueError:
+            continue
+        if allowed:
+            permissions.add(permission)
+        else:
+            permissions.discard(permission)
+    return permissions
