@@ -17,7 +17,7 @@ foydalanuvchi va depo boshqaruvi (3). Keyingilari: menyu/i18n/hisobotlar (4), de
 - Ierarxiya: Owner'ga hech kim tega olmaydi; Admin'ni faqat Owner boshqaradi va tayinlaydi;
   hech kim o'zini o'zgartira olmaydi. Har amal `audit_log`ga yoziladi.
 - Har handler `flags={"permission": ...}` bilan belgilanadi; belgilanmaganiga faqat faol
-  foydalanuvchi kiradi. Guruhlarda begonalarga javob berilmaydi. Anti-spam: 5 ta tezkor, keyin 1/s.
+  foydalanuvchi kiradi. Guruhlarda begonalarga javob berilmaydi. Anti-spam: 8 ta tezkor, keyin 1/s.
 
 Owner botga avval `/start` yozishi kerak — aks holda Telegram so'rov va alertlarni unga
 yetkaza olmaydi.

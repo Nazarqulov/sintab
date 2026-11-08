@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Driver, Vehicle
+from app.services.depots import apply_tag_mapping
 from app.services.samsara.client import SamsaraClient
 
 
@@ -21,6 +22,7 @@ async def sync_fleet(session: AsyncSession, client: SamsaraClient) -> tuple[int,
         vehicle.name = item.get("name") or vehicle.name
         vehicle.plate = item.get("licensePlate") or vehicle.plate
         vehicle.tag = _first_tag(item) or vehicle.tag
+        await apply_tag_mapping(session, vehicle)
         session.add(vehicle)
 
     existing_drivers = {d.samsara_id: d for d in (await session.scalars(select(Driver))).all()}

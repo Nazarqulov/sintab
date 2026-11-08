@@ -11,7 +11,7 @@ from app.core.i18n import t
 class ThrottlingMiddleware(BaseMiddleware):
     """Anti-spam: har foydalanuvchiga token-bucket (`burst` ta zudlik bilan, keyin `rate` ta/soniya)."""
 
-    def __init__(self, rate: float = 1.0, burst: int = 5, clock: Callable[[], float] = time.monotonic) -> None:
+    def __init__(self, rate: float = 1.0, burst: int = 8, clock: Callable[[], float] = time.monotonic) -> None:
         self._rate = rate
         self._burst = burst
         self._clock = clock

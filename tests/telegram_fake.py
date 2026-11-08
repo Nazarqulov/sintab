@@ -66,14 +66,18 @@ def message_update(
     chat_id: int | None = None,
     chat_type: str = "private",
     name: str = "Test User",
+    chat_title: str | None = None,
+    thread_id: int | None = None,
 ) -> Update:
     message = Message(
         message_id=next(_ids),
         date=datetime.now(UTC),
-        chat=Chat(id=chat_id if chat_id is not None else user_id, type=chat_type),
+        chat=Chat(id=chat_id if chat_id is not None else user_id, type=chat_type, title=chat_title),
         from_user=tg_user(user_id, name=name),
         text=text,
         contact=contact,
+        message_thread_id=thread_id,
+        is_topic_message=True if thread_id else None,
     )
     return Update(update_id=next(_ids), message=message)
 

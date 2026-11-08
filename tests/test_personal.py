@@ -1,35 +1,17 @@
 from datetime import UTC, datetime
 
 import pytest
-from aiogram import Bot
-from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.methods import SetMyCommands
 from sqlalchemy import select
 
-from app.bot.bot_instance import dp
 from app.bot.handlers.personal import SettingsAction
-from app.bot.middlewares.throttling import ThrottlingMiddleware
 from app.db.models import User, UserRole
 from app.services import preferences
 from app.services.preferences import PreferenceError
 from tests.helpers import add_user
-from tests.telegram_fake import FakeSession, callback_update, message_update
+from tests.telegram_fake import callback_update, message_update
 
 
-@pytest.fixture
-async def tg(session):
-    fake = FakeSession()
-    bot = Bot("123456:TEST-TOKEN", session=fake)
-    dp.fsm.storage = MemoryStorage()
-    for middleware in dp.callback_query.outer_middleware:
-        if isinstance(middleware, ThrottlingMiddleware):
-            middleware._buckets.clear()
-
-    async def feed(update):
-        await dp.feed_update(bot, update)
-
-    fake.feed = feed
-    return fake
 
 
 def _user(**kw) -> User:

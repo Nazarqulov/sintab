@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.i18n import LANGUAGES, LocalizedError
+from app.core.timeutils import hour_in_window
 from app.db.models import AuditLog, User
 from app.services.alerts.formatter import as_utc, safe_zone
 
@@ -65,9 +66,7 @@ def in_quiet_hours(user: User, now: datetime) -> bool:
     if user.quiet_start is None or user.quiet_end is None:
         return False
     tz, _ = safe_zone(user.timezone)
-    hour = now.astimezone(tz).hour
-    start, end = user.quiet_start, user.quiet_end
-    return start <= hour < end if start < end else hour >= start or hour < end
+    return hour_in_window(now.astimezone(tz).hour, user.quiet_start, user.quiet_end)
 
 
 def quiet_preset_key(user: User) -> str:

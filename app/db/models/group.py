@@ -24,4 +24,4 @@ class Group(Base):
     bound_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     depot: Mapped["Depot"] = relationship(back_populates="groups")
-    routing_rules: Mapped[list["RoutingRule"]] = relationship(back_populates="group")
+    routing_rules: Mapped[list["RoutingRule"]] = relationship(back_populates="group", passive_deletes=True)

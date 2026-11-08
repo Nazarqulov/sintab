@@ -6,8 +6,14 @@ from sqlalchemy import exists, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Alert, AlertDelivery, AlertMute, AppSetting, Driver, Vehicle
-from app.services.alerts.types import SEVERITY_OVERRIDES_SETTING, resolve_severity
+from app.core.config import settings
+from app.core.timeutils import hour_in_window
+from app.db.models import Alert, AlertDelivery, AlertMute, AppSetting, DeliveryKind, DeliveryStatus, Driver, Vehicle
+from app.services.alerts.formatter import safe_zone
+from app.services.alerts.recipients import personal_recipients
+from app.services.alerts.types import SEVERITY_OVERRIDES_SETTING, Severity, resolve_severity
+from app.services.app_settings import get_setting
+from app.services.depots import apply_tag_mapping
 from app.services.routing.service import find_target_groups
 from app.services.samsara.parser import NormalizedAlert
 
@@ -22,7 +28,9 @@ class IngestResult:
     suppressed: bool = False
 
 
-async def ingest_alert(session: AsyncSession, data: NormalizedAlert, *, owner_chat_id: int) -> IngestResult:
+async def ingest_alert(
+    session: AsyncSession, data: NormalizedAlert, *, owner_chat_id: int, now: datetime | None = None
+) -> IngestResult:
     existing_id = await _find_alert_id(session, data.event_id)
     if existing_id is not None:
         return IngestResult(alert_id=existing_id, created=False)
@@ -59,24 +67,51 @@ async def ingest_alert(session: AsyncSession, data: NormalizedAlert, *, owner_ch
         await session.commit()
         return IngestResult(alert_id=alert.id, created=True, suppressed=True)
 
+    now = now or datetime.now(UTC)
+    depot_id = vehicle.depot_id if vehicle else None
     groups = await find_target_groups(
         session,
         alert_type=alert.alert_type,
         severity=alert.severity,
-        depot_id=vehicle.depot_id if vehicle else None,
+        depot_id=depot_id,
         vehicle_tag=vehicle.tag if vehicle else None,
     )
+    # Tunda kelgan past darajali alertlar guruhlarga darhol emas, ertalabki digest bilan boradi.
+    group_status = DeliveryStatus.DEFERRED if await _defer_to_digest(session, alert.severity, now) else DeliveryStatus.PENDING
     if groups:
         deliveries = [
-            AlertDelivery(alert_id=alert.id, group_id=g.id, chat_id=g.chat_id, topic_id=g.topic_id) for g in groups
+            AlertDelivery(
+                alert_id=alert.id, group_id=g.id, chat_id=g.chat_id, topic_id=g.topic_id,
+                kind=DeliveryKind.ROUTE.value, status=group_status,
+            )
+            for g in groups
         ]
     else:
         # Alert jimgina yo'qolib ketmasligi uchun: qoida yo'q bo'lsa Owner'ga.
         logger.warning("Alert %s uchun routing qoidasi topilmadi — Owner'ga yuboriladi", alert.id)
-        deliveries = [AlertDelivery(alert_id=alert.id, chat_id=owner_chat_id)]
+        deliveries = [
+            AlertDelivery(alert_id=alert.id, chat_id=owner_chat_id, kind=DeliveryKind.OWNER.value, status=group_status)
+        ]
+
+    taken = {(d.chat_id, d.topic_id) for d in deliveries}
+    for user in await personal_recipients(session, alert, depot_id, now):
+        if (user.telegram_id, None) not in taken:
+            taken.add((user.telegram_id, None))
+            deliveries.append(AlertDelivery(alert_id=alert.id, chat_id=user.telegram_id, kind=DeliveryKind.PERSONAL.value))
+
     session.add_all(deliveries)
     await session.commit()
-    return IngestResult(alert_id=alert.id, created=True, delivery_ids=[d.id for d in deliveries])
+    pending = [d.id for d in deliveries if d.status == DeliveryStatus.PENDING]
+    return IngestResult(alert_id=alert.id, created=True, delivery_ids=pending)
+
+
+async def _defer_to_digest(session: AsyncSession, severity: str, now: datetime) -> bool:
+    if severity != Severity.INFO.value or not await get_setting(session, "digest_enabled"):
+        return False
+    tz, _ = safe_zone(settings.default_timezone)
+    start = await get_setting(session, "digest_start_hour")
+    end = await get_setting(session, "digest_end_hour")
+    return hour_in_window(now.astimezone(tz).hour, start, end)
 
 
 async def _find_alert_id(session: AsyncSession, event_id: str) -> int | None:
@@ -95,6 +130,7 @@ async def _upsert_vehicle(session: AsyncSession, data: NormalizedAlert) -> Vehic
     if data.latitude is not None and data.longitude is not None:
         vehicle.last_location = {"latitude": data.latitude, "longitude": data.longitude, "address": data.address}
         vehicle.last_seen_at = data.happened_at
+    await apply_tag_mapping(session, vehicle)
     await session.flush()
     return vehicle
 

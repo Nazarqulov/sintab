@@ -1,41 +1,17 @@
-import pytest
-from aiogram import Bot
-from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.methods import AnswerCallbackQuery, SendMessage
 from sqlalchemy import select
 
 from app.core.i18n import t
-from app.bot.bot_instance import dp
-from app.bot.middlewares.throttling import ThrottlingMiddleware
 from app.bot.handlers.depots import DepotAdmin
 from app.bot.keyboards.users import RegistrationDepot, UserAdmin
 from app.db.models import AuditLog, Depot, Driver, User, UserRole, UserStatus
 from tests.helpers import add_user
-from tests.telegram_fake import FakeSession, callback_update, message_update, own_contact
+from tests.telegram_fake import callback_update, message_update, own_contact
 
 OWNER_TG = 1000  # conftest'dagi OWNER_TELEGRAM_ID bilan bir xil
 NEW_TG = 2001
 
 
-@pytest.fixture
-async def tg(session):
-    fake = FakeSession()
-    bot = Bot("123456:TEST-TOKEN", session=fake)
-    # Router'lar faqat bitta dispatcher'ga ulanadi — modul darajasidagisini qayta ishlatib, holatini tozalaymiz.
-    dp.fsm.storage = MemoryStorage()
-
-    def reset_throttling() -> None:
-        for middleware in dp.callback_query.outer_middleware:
-            if isinstance(middleware, ThrottlingMiddleware):
-                middleware._buckets.clear()
-
-    async def feed(update):
-        await dp.feed_update(bot, update)
-
-    reset_throttling()
-    fake.feed = feed
-    fake.reset_throttling = reset_throttling
-    return fake
 
 
 async def _user(session, telegram_id: int) -> User | None:
@@ -266,7 +242,7 @@ async def test_button_spam_is_throttled(session, tg):
     for _ in range(12):
         await tg.feed(callback_update(OWNER_TG, _cb("list", 0)))
     throttled = [a for a in tg.answers() if a.text and "Juda tez" in a.text]
-    assert 5 <= len(throttled) <= 7
+    assert 3 <= len(throttled) <= 4  # 12 ta bosishdan 8 tasi zaxiradan o'tadi
 
 
 async def test_alert_buttons_require_active_user(session, tg):
