@@ -114,7 +114,7 @@ async def test_mute_creates_one_hour_mute_for_vehicle_and_type(session):
     muted = (mute.vehicle_id, mute.alert_type, mute.muted_by)
     expected = ((await _reload(session, alert_id)).vehicle_id, "crash", dispatcher_id)
     assert muted == expected
-    assert "1 soat" in reply
+    assert "1 soat" in str(reply)
 
     second = await ingest_alert(session, normalized("evt-2"), owner_chat_id=OWNER_CHAT_ID)
     assert second.suppressed
@@ -123,14 +123,14 @@ async def test_mute_creates_one_hour_mute_for_vehicle_and_type(session):
 async def test_refresh_edits_every_sent_message(session):
     alert_id = await _alert(session)
     bot = FakeBot()
-    sender = AlertSender(bot, AsyncSessionLocal, "Asia/Tashkent")
+    sender = AlertSender(bot, AsyncSessionLocal)
     alert = await session.get(Alert, alert_id)
     await session.refresh(alert, ["deliveries"])
     await sender.process(alert.deliveries[0].id)
 
     dispatcher = await add_user(session, 1, UserRole.DISPATCHER, full_name="Dilshod")
     await apply_action(session, alert_id, AlertActionType.ACK, dispatcher)
-    await refresh_alert_messages(bot, session, alert_id, "Asia/Tashkent")
+    await refresh_alert_messages(bot, session, alert_id)
 
     assert len(bot.edited) == 1
     edit = bot.edited[0]

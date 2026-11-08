@@ -102,7 +102,7 @@ async def test_resolved_event_is_info_and_marked(session):
     result = await ingest_alert(session, normalized(resolved=True), owner_chat_id=OWNER_CHAT_ID)
     alert = await session.get(Alert, result.alert_id)
     assert alert.severity == "info"
-    assert alert.message.startswith("✅ Samsara: bartaraf etildi")
+    assert alert.samsara_resolved is True and alert.message == "Crash detected"
 
 
 async def test_existing_vehicle_and_driver_are_reused_and_renamed(session):

@@ -3,7 +3,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
 
-from app.bot.handlers import alerts, depots, fallback, registration, users_admin
+from app.bot.handlers import alerts, depots, fallback, personal, registration, users_admin
 from app.bot.middlewares.access import AccessMiddleware
 from app.bot.middlewares.db import DbSessionMiddleware
 from app.bot.middlewares.throttling import ThrottlingMiddleware
@@ -25,7 +25,9 @@ def build_dispatcher() -> Dispatcher:
     dispatcher.message.middleware(AccessMiddleware())
     dispatcher.callback_query.middleware(AccessMiddleware())
 
-    dispatcher.include_routers(registration.router, alerts.router, users_admin.router, depots.router)
+    dispatcher.include_routers(
+        registration.router, personal.router, alerts.router, users_admin.router, depots.router
+    )
     dispatcher.include_router(fallback.router)  # oxirida bo'lishi shart
     return dispatcher
 

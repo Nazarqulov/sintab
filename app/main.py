@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     async with AsyncSessionLocal() as session:
         await ensure_owner(session, settings.owner_telegram_id)
 
-    sender = AlertSender(bot, AsyncSessionLocal, settings.default_timezone)
+    sender = AlertSender(bot, AsyncSessionLocal)
     await sender.start()
     app.state.alert_sender = sender
 

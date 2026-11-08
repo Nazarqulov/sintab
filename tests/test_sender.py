@@ -17,7 +17,7 @@ def make_sender(bot: FakeBot, sleeps: list[float], clock_value: list[float] | No
         sleeps.append(seconds)
         clock_value[0] += seconds
 
-    return AlertSender(bot, AsyncSessionLocal, "Asia/Tashkent", sleep=fake_sleep, clock=lambda: clock_value[0])
+    return AlertSender(bot, AsyncSessionLocal, sleep=fake_sleep, clock=lambda: clock_value[0])
 
 
 async def _delivery(session, delivery_id: int) -> AlertDelivery:

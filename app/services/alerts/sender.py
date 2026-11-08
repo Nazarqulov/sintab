@@ -12,9 +12,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import selectinload
 
-from app.bot.keyboards.alerts import alert_keyboard
 from app.db.models import AlertDelivery, DeliveryStatus
-from app.services.alerts.formatter import format_alert
+from app.services.alerts.render import delivery_context, render_delivery
 
 logger = logging.getLogger(__name__)
 
@@ -36,14 +35,14 @@ class AlertSender:
         self,
         bot: Bot,
         session_factory: async_sessionmaker[AsyncSession],
-        tz_name: str,
         *,
+        on_failure: Callable[[AlertDelivery, Exception], Awaitable[None]] | None = None,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._bot = bot
         self._session_factory = session_factory
-        self._tz_name = tz_name
+        self._on_failure = on_failure
         self._sleep = sleep
         self._clock = clock
         self._queue: asyncio.Queue[int] = asyncio.Queue()
@@ -89,8 +88,7 @@ class AlertSender:
             if delivery is None or delivery.status != DeliveryStatus.PENDING:
                 return
 
-            text = format_alert(delivery.alert, self._tz_name)
-            markup = alert_keyboard(delivery.alert)
+            text, markup = render_delivery(delivery.alert, delivery, await delivery_context(session, delivery))
             rate_limit_waits = 0
             failures = 0
             while True:
@@ -139,6 +137,11 @@ class AlertSender:
         delivery.last_error = str(error)[:500]
         await session.commit()
         logger.error("Yetkazish %s (chat %s) muvaffaqiyatsiz: %s", delivery.id, delivery.chat_id, error)
+        if self._on_failure is not None:
+            try:
+                await self._on_failure(delivery, error)
+            except Exception:
+                logger.exception("on_failure callback xatosi")
 
     async def _throttle(self, chat_id: int) -> None:
         interval = GROUP_CHAT_INTERVAL if chat_id < 0 else PRIVATE_CHAT_INTERVAL

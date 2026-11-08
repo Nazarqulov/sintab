@@ -5,6 +5,8 @@ from typing import Any
 from aiogram import BaseMiddleware
 from aiogram.types import CallbackQuery, TelegramObject
 
+from app.core.i18n import t
+
 
 class ThrottlingMiddleware(BaseMiddleware):
     """Anti-spam: har foydalanuvchiga token-bucket (`burst` ta zudlik bilan, keyin `rate` ta/soniya)."""
@@ -35,5 +37,5 @@ class ThrottlingMiddleware(BaseMiddleware):
         if tg_user is None or self.allow(tg_user.id):
             return await handler(event, data)
         if isinstance(event, CallbackQuery):
-            await event.answer("⏳ Juda tez. Biroz kuting.")
+            await event.answer(t("common.too_fast", data.get("lang")))
         return None

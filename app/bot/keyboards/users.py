@@ -1,9 +1,12 @@
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 
-from app.bot.texts import PERMISSION_LABELS, POSITION_SUGGESTIONS, ROLE_LABELS, STATUS_LABELS
+from app.bot.texts import POSITION_SUGGESTIONS, permission_label, role_label
+from app.core.i18n import t
 from app.core.permissions import Permission
 from app.db.models import Depot, User, UserRole, UserStatus
+
+STATUS_ICONS = {UserStatus.PENDING: "⏳", UserStatus.ACTIVE: "✅", UserStatus.BLOCKED: "🚫"}
 
 
 class UserAdmin(CallbackData, prefix="ua"):
@@ -29,9 +32,9 @@ def name_keyboard(telegram_name: str | None) -> ReplyKeyboardMarkup | None:
     return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=telegram_name)]], resize_keyboard=True, one_time_keyboard=True)
 
 
-def phone_keyboard() -> ReplyKeyboardMarkup:
+def phone_keyboard(lang: str | None) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="📱 Raqamimni yuborish", request_contact=True)]],
+        keyboard=[[KeyboardButton(text=t("reg.phone_button", lang), request_contact=True)]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
@@ -46,21 +49,23 @@ class RegistrationDepot(CallbackData, prefix="rd"):
     depot_id: int  # 0 — "bilmayman"
 
 
-def registration_depot_keyboard(depots: list[Depot]) -> InlineKeyboardMarkup:
+def registration_depot_keyboard(depots: list[Depot], lang: str | None) -> InlineKeyboardMarkup:
     rows = [[InlineKeyboardButton(text=f"🏢 {d.name}", callback_data=RegistrationDepot(depot_id=d.id).pack())] for d in depots]
-    rows.append([InlineKeyboardButton(text="🤷 Bilmayman", callback_data=RegistrationDepot(depot_id=0).pack())])
+    rows.append([InlineKeyboardButton(text=t("reg.depot_unknown", lang), callback_data=RegistrationDepot(depot_id=0).pack())])
     return _markup(rows)
 
 
 # --- Tasdiqlash (admin tomoni) ---
 
-def request_keyboard(user_id: int) -> InlineKeyboardMarkup:
-    return _markup([[_btn("✅ Tasdiqlash", "approve", user_id), _btn("❌ Rad etish", "reject", user_id)]])
+def request_keyboard(user_id: int, lang: str | None) -> InlineKeyboardMarkup:
+    return _markup([[_btn(t("users.approve", lang), "approve", user_id), _btn(t("users.reject", lang), "reject", user_id)]])
 
 
-def role_keyboard(user_id: int, roles: list[UserRole], set_action: str, back_action: str) -> InlineKeyboardMarkup:
-    rows = [[_btn(ROLE_LABELS[r], set_action, user_id, r.value)] for r in roles]
-    rows.append([_btn("⬅️ Orqaga", back_action, user_id)])
+def role_keyboard(
+    user_id: int, roles: list[UserRole], set_action: str, back_action: str, lang: str | None
+) -> InlineKeyboardMarkup:
+    rows = [[_btn(role_label(r, lang), set_action, user_id, r.value)] for r in roles]
+    rows.append([_btn(t("common.back", lang), back_action, user_id)])
     return _markup(rows)
 
 
@@ -81,12 +86,11 @@ def depot_keyboard(
 
 # --- /users boshqaruvi ---
 
-def user_list_keyboard(users: list[User], page: int, pages: int) -> InlineKeyboardMarkup:
+def user_list_keyboard(users: list[User], page: int, pages: int, lang: str | None) -> InlineKeyboardMarkup:
     rows = []
     for user in users:
-        status_icon = STATUS_LABELS[user.status].split()[0]
-        role_icon = ROLE_LABELS[user.role].split()[0]
-        label = f"{status_icon} {role_icon} {user.full_name or user.username or user.telegram_id}"
+        role_icon = role_label(user.role, lang).split()[0]
+        label = f"{STATUS_ICONS[user.status]} {role_icon} {user.full_name or user.username or user.telegram_id}"
         rows.append([_btn(label[:60], "view", user.id, str(page))])
     nav = []
     if page > 0:
@@ -99,33 +103,35 @@ def user_list_keyboard(users: list[User], page: int, pages: int) -> InlineKeyboa
     return _markup(rows)
 
 
-def user_card_keyboard(target: User, actor: User, page: str = "0") -> InlineKeyboardMarkup:
+def user_card_keyboard(target: User, actor: User, lang: str | None, page: str = "0") -> InlineKeyboardMarkup:
     uid = target.id
     rows: list[list[InlineKeyboardButton]] = []
     if target.status == UserStatus.PENDING and target.phone:
-        rows.append([_btn("✅ Tasdiqlash", "approve", uid), _btn("❌ Rad etish", "reject", uid)])
+        rows.append([_btn(t("users.approve", lang), "approve", uid), _btn(t("users.reject", lang), "reject", uid)])
     elif target.status == UserStatus.ACTIVE:
-        rows.append([_btn("🎭 Rol", "role", uid), _btn("🏢 Depolar", "depots", uid)])
+        rows.append([_btn(t("users.btn_role", lang), "role", uid), _btn(t("users.btn_depots", lang), "depots", uid)])
         if actor.role == UserRole.OWNER:
-            rows.append([_btn("🔑 Individual huquqlar", "perms", uid)])
+            rows.append([_btn(t("users.btn_perms", lang), "perms", uid)])
     if target.status == UserStatus.BLOCKED:
-        rows.append([_btn("✅ Blokdan chiqarish", "unblock", uid)])
+        rows.append([_btn(t("users.btn_unblock", lang), "unblock", uid)])
     else:
-        rows.append([_btn("🚫 Bloklash", "block", uid)])
-    rows.append([_btn("🗑 O'chirish", "delete", uid)])
-    rows.append([_btn("⬅️ Ro'yxatga", "list", arg=page)])
+        rows.append([_btn(t("users.btn_block", lang), "block", uid)])
+    rows.append([_btn(t("users.btn_delete", lang), "delete", uid)])
+    rows.append([_btn(t("users.btn_to_list", lang), "list", arg=page)])
     return _markup(rows)
 
 
-def confirm_delete_keyboard(user_id: int) -> InlineKeyboardMarkup:
-    return _markup([[_btn("🗑 Ha, o'chirilsin", "delok", user_id), _btn("⬅️ Yo'q", "view", user_id)]])
+def confirm_delete_keyboard(user_id: int, lang: str | None) -> InlineKeyboardMarkup:
+    return _markup([[_btn(t("common.yes_delete", lang), "delok", user_id), _btn(t("common.no", lang), "view", user_id)]])
 
 
-def permissions_keyboard(user_id: int, effective: set[Permission], overrides: dict[str, bool]) -> InlineKeyboardMarkup:
+def permissions_keyboard(
+    user_id: int, effective: set[Permission], overrides: dict[str, bool], lang: str | None
+) -> InlineKeyboardMarkup:
     rows = []
     for permission in Permission:
         icon = "✅" if permission in effective else "▫️"
         marker = {True: " · +", False: " · −"}.get(overrides.get(permission.value), "")
-        rows.append([_btn(f"{icon} {PERMISSION_LABELS[permission]}{marker}", "perm", user_id, permission.value)])
-    rows.append([_btn("⬅️ Orqaga", "view", user_id)])
+        rows.append([_btn(f"{icon} {permission_label(permission, lang)}{marker}", "perm", user_id, permission.value)])
+    rows.append([_btn(t("common.back", lang), "view", user_id)])
     return _markup(rows)

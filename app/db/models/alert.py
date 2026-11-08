@@ -32,6 +32,10 @@ class Alert(Base):
     samsara_url: Mapped[str | None] = mapped_column(String(512))
     # Mute faol bo'lgani uchun saqlangan, lekin hech kimga yuborilmagan alert.
     suppressed: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    # Samsara'ning o'zi "hal bo'ldi" deb yuborgan hodisa.
+    samsara_resolved: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    resolution_reason: Mapped[str | None] = mapped_column(String(32))
+    resolution_note: Mapped[str | None] = mapped_column(Text)
     status: Mapped[AlertStatus] = mapped_column(
         SAEnum(AlertStatus, name="alert_status", values_callable=enum_values), default=AlertStatus.NEW, index=True
     )

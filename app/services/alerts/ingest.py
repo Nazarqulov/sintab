@@ -30,7 +30,6 @@ async def ingest_alert(session: AsyncSession, data: NormalizedAlert, *, owner_ch
     vehicle = await _upsert_vehicle(session, data)
     driver = await _upsert_driver(session, data)
     severity = resolve_severity(data.alert_type, data.resolved, await _severity_overrides(session))
-    message = f"✅ Samsara: bartaraf etildi — {data.description}" if data.resolved else data.description
 
     alert = Alert(
         samsara_alert_id=data.event_id,
@@ -38,7 +37,8 @@ async def ingest_alert(session: AsyncSession, data: NormalizedAlert, *, owner_ch
         severity=severity.value,
         vehicle=vehicle,
         driver=driver,
-        message=message,
+        message=data.description,
+        samsara_resolved=data.resolved,
         payload=data.raw,
         happened_at=data.happened_at,
         latitude=data.latitude,

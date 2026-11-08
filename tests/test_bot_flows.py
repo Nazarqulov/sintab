@@ -4,9 +4,10 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.methods import AnswerCallbackQuery, SendMessage
 from sqlalchemy import select
 
-from app.bot import texts
+from app.core.i18n import t
 from app.bot.bot_instance import dp
 from app.bot.middlewares.throttling import ThrottlingMiddleware
+from app.bot.handlers.depots import DepotAdmin
 from app.bot.keyboards.users import RegistrationDepot, UserAdmin
 from app.db.models import AuditLog, Depot, Driver, User, UserRole, UserStatus
 from tests.helpers import add_user
@@ -119,15 +120,15 @@ async def test_pending_user_sees_nothing_until_approved(session, tg):
     await tg.feed(message_update(NEW_TG, "/users"))
     await tg.feed(message_update(NEW_TG, "/start"))
 
-    assert [m.text for m in tg.sent(NEW_TG)] == [texts.PENDING, texts.PENDING]
+    assert [m.text for m in tg.sent(NEW_TG)] == [t("access.pending"), t("access.pending")]
 
 
 async def test_role_without_permission_is_denied(session, tg):
     await add_user(session, 3001, UserRole.VIEWER, full_name="V")
     await tg.feed(message_update(3001, "/users"))
-    assert tg.last_text() == texts.NO_PERMISSION
+    assert tg.last_text() == t("access.no_permission")
     await tg.feed(message_update(3001, "/depots"))
-    assert tg.last_text() == texts.NO_PERMISSION
+    assert tg.last_text() == t("access.no_permission")
 
 
 async def test_unregistered_user_in_group_gets_no_reply(session, tg):
@@ -187,7 +188,7 @@ async def test_viewer_forged_admin_callback_is_refused(session, tg):
 
     await tg.feed(callback_update(3001, _cb("block", victim.id)))
 
-    assert tg.answers()[-1].text == texts.NO_PERMISSION
+    assert tg.answers()[-1].text == t("access.no_permission")
     assert (await _user(session, 3003)).status == UserStatus.ACTIVE
 
 
@@ -201,7 +202,7 @@ async def test_reject_blocks_and_notifies(session, tg):
     assert (await _user(session, NEW_TG)).status == UserStatus.BLOCKED
     assert "rad etildi" in tg.sent(NEW_TG)[-1].text
     await tg.feed(message_update(NEW_TG, "/start"))
-    assert tg.last_text() == texts.BLOCKED
+    assert tg.last_text() == t("access.blocked")
 
 
 async def test_second_admin_clicking_stale_request_is_told(session, tg):
@@ -227,7 +228,7 @@ async def test_users_list_card_block_and_delete(session, tg):
     assert "Dave" in tg.edits()[-1].text
     await tg.feed(callback_update(OWNER_TG, _cb("block", victim.id)))
     assert (await _user(session, 3003)).status == UserStatus.BLOCKED
-    assert tg.sent(3003)[-1].text == texts.BLOCKED
+    assert tg.sent(3003)[-1].text == t("access.blocked")
 
     await tg.feed(callback_update(OWNER_TG, _cb("delete", victim.id)))
     await tg.feed(callback_update(OWNER_TG, _cb("delok", victim.id)))
@@ -249,11 +250,11 @@ async def test_owner_grants_individual_permission(session, tg):
 async def test_depot_creation_via_bot(session, tg):
     await add_user(session, OWNER_TG, UserRole.OWNER, full_name="Owner")
     await tg.feed(message_update(OWNER_TG, "/depots"))
-    await tg.feed(callback_update(OWNER_TG, "dp:add:0"))
+    await tg.feed(callback_update(OWNER_TG, DepotAdmin(action="add").pack()))
     await tg.feed(message_update(OWNER_TG, "Joliet Yard"))
     assert "«Joliet Yard» qo'shildi" in tg.last_text()
 
-    await tg.feed(callback_update(OWNER_TG, "dp:add:0"))
+    await tg.feed(callback_update(OWNER_TG, DepotAdmin(action="add").pack()))
     await tg.feed(message_update(OWNER_TG, "joliet yard"))
     assert "allaqachon" in tg.last_text()
     await tg.feed(message_update(OWNER_TG, "/cancel"))
@@ -271,5 +272,5 @@ async def test_button_spam_is_throttled(session, tg):
 async def test_alert_buttons_require_active_user(session, tg):
     await tg.feed(callback_update(4001, "al:ack:1", chat_id=-100500))
     answer = tg.answers()[-1]
-    assert isinstance(answer, AnswerCallbackQuery) and answer.text == texts.NOT_REGISTERED
+    assert isinstance(answer, AnswerCallbackQuery) and answer.text == t("access.not_registered")
     assert not any(isinstance(m, SendMessage) for m in tg.requests)

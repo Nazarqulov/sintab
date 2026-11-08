@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.permissions import Permission
 from app.db.models import AuditLog, Depot, PermissionOverride, User, UserRole, UserStatus
+from app.core.i18n import LocalizedError
 from app.services.users import has_permission
 
 ASSIGNABLE_BY_ADMIN = [UserRole.DISPATCHER, UserRole.MANAGER, UserRole.VIEWER, UserRole.DRIVER]
@@ -18,8 +19,8 @@ GLOBAL_ROLES = {UserRole.OWNER, UserRole.ADMIN}
 PAGE_SIZE = 8
 
 
-class AdminError(Exception):
-    """Foydalanuvchiga ko'rsatiladigan rad javobi."""
+class AdminError(LocalizedError):
+    """Foydalanuvchiga ko'rsatiladigan rad javobi (tarjima kaliti bilan)."""
 
 
 def assignable_roles(actor: User) -> list[UserRole]:
@@ -28,16 +29,16 @@ def assignable_roles(actor: User) -> list[UserRole]:
 
 async def _check(actor: User | None, target: User, *permissions: Permission) -> User:
     if actor is None or actor.status != UserStatus.ACTIVE:
-        raise AdminError("⛔ Ruxsat yo'q.")
+        raise AdminError("access.no_access")
     for permission in permissions:
         if not await has_permission(actor, permission):
-            raise AdminError("⛔ Sizda bu amal uchun ruxsat yo'q.")
+            raise AdminError("access.no_permission")
     if target.id == actor.id:
-        raise AdminError("O'zingizni o'zgartira olmaysiz.")
+        raise AdminError("admin_err.self")
     if target.role == UserRole.OWNER:
-        raise AdminError("Owner'ni o'zgartirib bo'lmaydi.")
+        raise AdminError("admin_err.owner")
     if target.role == UserRole.ADMIN and actor.role != UserRole.OWNER:
-        raise AdminError("Admin'ni faqat Owner boshqara oladi.")
+        raise AdminError("admin_err.admin_owner_only")
     # Keyingi sinxron kirishlar async'da lazy-load qilmasligi uchun kolleksiyalarni oldindan yuklaymiz.
     await target.awaitable_attrs.depots
     await target.awaitable_attrs.permission_overrides
@@ -51,7 +52,7 @@ def _audit(session: AsyncSession, actor: User, action: str, target: User, **deta
 async def set_role(session: AsyncSession, actor: User | None, target: User, role: UserRole) -> None:
     actor = await _check(actor, target, Permission.MANAGE_USERS, Permission.MANAGE_ROLES)
     if role not in assignable_roles(actor):
-        raise AdminError("Bu rolni tayinlay olmaysiz.")
+        raise AdminError("admin_err.role_not_assignable")
     previous = target.role
     target.role = role
     if role in GLOBAL_ROLES:
@@ -65,7 +66,7 @@ async def toggle_depot(session: AsyncSession, actor: User | None, target: User, 
     actor = await _check(actor, target, Permission.MANAGE_USERS)
     depot = await session.get(Depot, depot_id)
     if depot is None:
-        raise AdminError("Depo topilmadi.")
+        raise AdminError("depot_err.not_found")
     if depot in target.depots:
         target.depots.remove(depot)
     else:
@@ -78,9 +79,9 @@ async def toggle_depot(session: AsyncSession, actor: User | None, target: User, 
 async def approve(session: AsyncSession, actor: User | None, target: User) -> None:
     actor = await _check(actor, target, Permission.MANAGE_USERS, Permission.MANAGE_ROLES)
     if target.status != UserStatus.PENDING:
-        raise AdminError("Bu so'rov allaqachon ko'rib chiqilgan.")
+        raise AdminError("admin_err.already_reviewed")
     if target.role not in assignable_roles(actor):
-        raise AdminError("Avval rolni tanlang.")
+        raise AdminError("admin_err.choose_role_first")
     target.status = UserStatus.ACTIVE
     _audit(session, actor, "user_approved", target, role=target.role.value, depots=[d.name for d in target.depots])
     await session.commit()
@@ -90,7 +91,7 @@ async def reject(session: AsyncSession, actor: User | None, target: User) -> Non
     """Rad etilgan foydalanuvchi bloklanadi — qayta-qayta so'rov yuborib spam qila olmasin."""
     actor = await _check(actor, target, Permission.MANAGE_USERS)
     if target.status != UserStatus.PENDING:
-        raise AdminError("Bu so'rov allaqachon ko'rib chiqilgan.")
+        raise AdminError("admin_err.already_reviewed")
     target.status = UserStatus.BLOCKED
     _audit(session, actor, "user_rejected", target)
     await session.commit()
@@ -120,7 +121,7 @@ async def delete_user(session: AsyncSession, actor: User | None, target: User) -
 async def cycle_override(session: AsyncSession, actor: User | None, target: User, permission: Permission) -> None:
     """Rol standarti → majburan berish → olib qo'yish → standart. Faqat Owner."""
     if actor is None or actor.role != UserRole.OWNER:
-        raise AdminError("Individual huquqlarni faqat Owner o'zgartiradi.")
+        raise AdminError("admin_err.overrides_owner_only")
     actor = await _check(actor, target)
     override = next((o for o in target.permission_overrides if o.permission == permission.value), None)
     if override is None:

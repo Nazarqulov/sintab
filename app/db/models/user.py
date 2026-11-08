@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, String
+from sqlalchemy import BigInteger, DateTime, ForeignKey, SmallInteger, String
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -45,6 +45,11 @@ class User(Base):
     language: Mapped[str] = mapped_column(String(8), default="uz")
     timezone: Mapped[str] = mapped_column(String(64), default="America/Chicago")
     muted_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Shaxsiy alertlar: off | critical | warning (critical+warning) | all
+    notify_level: Mapped[str] = mapped_column(String(16), default="off", server_default="off")
+    # Jim soatlar (foydalanuvchi vaqt zonasida, soat 0–23); critical alertlar baribir keladi.
+    quiet_start: Mapped[int | None] = mapped_column(SmallInteger)
+    quiet_end: Mapped[int | None] = mapped_column(SmallInteger)
     # Driver roli uchun: Samsara'dagi haydovchi yozuvi (telefon bo'yicha avtomatik bog'lanadi).
     driver_id: Mapped[int | None] = mapped_column(ForeignKey("drivers.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

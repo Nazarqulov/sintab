@@ -11,18 +11,18 @@ from aiogram.dispatcher.flags import get_flag
 from aiogram.enums import ChatType
 from aiogram.types import CallbackQuery, Message, TelegramObject
 
-from app.bot import texts
+from app.core.i18n import t
 from app.db.models import User, UserStatus
 from app.services.users import has_permission
 
 
-def denial_reason(user: User | None) -> str | None:
+def denial_key(user: User | None) -> str | None:
     if user is None:
-        return texts.NOT_REGISTERED
+        return "access.not_registered"
     if user.status == UserStatus.PENDING:
-        return texts.PENDING
+        return "access.pending"
     if user.status == UserStatus.BLOCKED:
-        return texts.BLOCKED
+        return "access.blocked"
     return None
 
 
@@ -37,16 +37,17 @@ class AccessMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         user: User | None = data.get("user")
-        reason = denial_reason(user)
+        key = denial_key(user)
         permission = get_flag(data, "permission")
-        if reason is None and permission is not None and not await has_permission(user, permission):
-            reason = texts.NO_PERMISSION
-        if reason is None:
+        if key is None and permission is not None and not await has_permission(user, permission):
+            key = "access.no_permission"
+        if key is None:
             return await handler(event, data)
 
+        text = t(key, data.get("lang"))
         if isinstance(event, CallbackQuery):
-            await event.answer(reason, show_alert=True)
+            await event.answer(text, show_alert=True)
         elif isinstance(event, Message) and event.chat.type == ChatType.PRIVATE:
             # Guruhlarda begona a'zolarning buyruqlariga javob berib chatni to'ldirmaymiz.
-            await event.answer(reason)
+            await event.answer(text)
         return None

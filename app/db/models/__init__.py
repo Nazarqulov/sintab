@@ -1,11 +1,14 @@
 from app.db.models.alert import Alert, AlertStatus
-from app.db.models.alert_delivery import AlertDelivery, DeliveryStatus
+from app.db.models.alert_delivery import AlertDelivery, DeliveryKind, DeliveryStatus
 from app.db.models.alert_mute import AlertMute
 from app.db.models.app_setting import AppSetting
 from app.db.models.audit_log import AuditLog
+from app.db.models.chat_message import ChatMessage
 from app.db.models.depot import Depot
+from app.db.models.document import Document, DocumentOwner, DocumentType
 from app.db.models.driver import Driver
 from app.db.models.group import Group
+from app.db.models.notification_mark import NotificationMark
 from app.db.models.permission_override import PermissionOverride
 from app.db.models.routing_rule import RoutingRule
 from app.db.models.user import User, UserRole, UserStatus
@@ -18,10 +21,16 @@ __all__ = [
     "AlertStatus",
     "AppSetting",
     "AuditLog",
+    "ChatMessage",
+    "DeliveryKind",
     "DeliveryStatus",
     "Depot",
+    "Document",
+    "DocumentOwner",
+    "DocumentType",
     "Driver",
     "Group",
+    "NotificationMark",
     "PermissionOverride",
     "RoutingRule",
     "User",
