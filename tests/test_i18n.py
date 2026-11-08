@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from app.bot.handlers.admin import ADMIN_SECTIONS
 from app.bot.commands import GROUP_ADMIN_COMMANDS, GUEST_COMMANDS, USER_COMMANDS
 from app.bot.keyboards.menu import REPLY_SECTIONS, SECTIONS
 from app.core.i18n import CATALOG, DEFAULT_LANGUAGE, LANGUAGES, Text, placeholders, t
@@ -10,7 +11,9 @@ from app.core.permissions import Permission
 from app.db.models import UserRole, UserStatus
 from app.services.alerts.formatter import RESOLUTION_REASONS
 from app.services.alerts.types import AlertType
+from app.services.app_settings import CHOICES
 from app.services.preferences import NOTIFY_LEVELS
+from app.services.reports import EXPORT_COLUMNS, PERIODS
 
 APP_DIR = Path(__file__).resolve().parent.parent / "app"
 NAMESPACES = {key.split(".")[0] for key in CATALOG[DEFAULT_LANGUAGE]}
@@ -53,6 +56,11 @@ def test_dynamic_key_families_are_translated():
         + [f"cmd.{name}" for name in GUEST_COMMANDS + GROUP_ADMIN_COMMANDS]
         + [f"menu.{s.key}" for s in SECTIONS]
         + [f"menu.{key}" for key in REPLY_SECTIONS]
+        + [f"admin.section.{key}" for key, _ in ADMIN_SECTIONS] + ["admin.section.backup"]
+        + [f"admin.setting.{key}" for key in CHOICES]
+        + [f"reports.period.{p}" for p in PERIODS]
+        + [f"reports.col.{c}" for c in EXPORT_COLUMNS]
+        + [f"browse.filter_{f}" for f in ("open", "new", "all")]
     )
     missing = [key for key in keys if key not in CATALOG[DEFAULT_LANGUAGE]]
     assert not missing, missing

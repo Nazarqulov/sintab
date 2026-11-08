@@ -2,12 +2,14 @@ import contextlib
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
+from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery, Message, ReactionTypeEmoji
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.keyboards.alerts import AlertAction, AlertActionType, AlertReason, reasons_keyboard
+from app.bot.handlers.browse import render_detail
 from app.core.i18n import t
-from app.db.models import User
+from app.db.models import Alert, User
 from app.services.alerts.actions import (
     ActionError,
     add_note,
@@ -32,9 +34,18 @@ async def on_resolve_click(callback: CallbackQuery, callback_data: AlertAction, 
 
 
 @router.callback_query(AlertAction.filter(F.action == AlertActionType.BACK))
-async def on_back(callback: CallbackQuery, callback_data: AlertAction, session: AsyncSession) -> None:
-    await refresh_alert_messages(callback.bot, session, callback_data.alert_id)
+async def on_back(callback: CallbackQuery, callback_data: AlertAction, session: AsyncSession, user: User, lang: str) -> None:
+    await _refresh_everywhere(callback, session, callback_data.alert_id, user, lang)
     await callback.answer()
+
+
+async def _refresh_everywhere(callback: CallbackQuery, session: AsyncSession, alert_id: int, user: User, lang: str) -> None:
+    """Guruh/shaxsiy yetkazishlarni yangilaydi; tugma /alerts kartasida bosilgan bo'lsa — kartani ham."""
+    await refresh_alert_messages(callback.bot, session, alert_id)
+    if await find_alert_by_message(session, callback.message.chat.id, callback.message.message_id) is None:
+        alert = await session.get(Alert, alert_id, populate_existing=True)
+        if alert is not None:
+            await render_detail(callback.message, alert, user, lang, edit=True)
 
 
 @router.callback_query(AlertAction.filter())
@@ -48,7 +59,7 @@ async def on_alert_action(
         return
     await callback.answer(reply.render(lang))
     if callback_data.action != AlertActionType.MUTE:
-        await refresh_alert_messages(callback.bot, session, callback_data.alert_id)
+        await _refresh_everywhere(callback, session, callback_data.alert_id, user, lang)
 
 
 @router.callback_query(AlertReason.filter())
@@ -63,10 +74,10 @@ async def on_reason(
         await callback.answer(error.render(lang), show_alert=True)
         return
     await callback.answer(reply.render(lang))
-    await refresh_alert_messages(callback.bot, session, callback_data.alert_id)
+    await _refresh_everywhere(callback, session, callback_data.alert_id, user, lang)
 
 
-@router.message(F.reply_to_message, F.text, ~F.text.startswith("/"))
+@router.message(StateFilter(None), F.reply_to_message, F.text, ~F.text.startswith("/"))
 async def on_alert_reply(message: Message, session: AsyncSession, user: User, lang: str) -> None:
     """Guruhda alert xabariga reply — alertga izoh (privacy mode'da ham bot reply'larni ko'radi)."""
     reply_to = message.reply_to_message

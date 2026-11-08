@@ -45,6 +45,9 @@ class SamsaraClient:
     async def aclose(self) -> None:
         await self._client.aclose()
 
+    async def ping(self) -> None:
+        await self._get("/fleet/vehicles", {"limit": "1"})
+
     async def list_vehicles(self) -> list[dict[str, Any]]:
         return await self._paginate("/fleet/vehicles")
 

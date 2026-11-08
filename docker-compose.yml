@@ -23,6 +23,27 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
+    volumes:
+      - ./backups:/backups:ro
+
+  # pg_dump — db bilan bir xil image, versiyalar doim mos.
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGUSER: samsara_bot
+      PGPASSWORD: ${POSTGRES_PASSWORD:-samsara_bot}
+      PGDATABASE: samsara_bot
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup-loop.sh:/backup-loop.sh:ro
+    entrypoint: ["/bin/sh", "/backup-loop.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   pgdata:

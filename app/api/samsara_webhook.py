@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Header, HTTPException, Request, status
 from pydantic import ValidationError
@@ -7,6 +8,7 @@ from pydantic import ValidationError
 from app.core.config import settings
 from app.db.session import AsyncSessionLocal
 from app.services.alerts.ingest import ingest_alert
+from app.services.monitoring import record_webhook
 from app.services.samsara.parser import parse_webhook
 from app.services.samsara.signature import verify_signature
 
@@ -42,10 +44,10 @@ async def samsara_webhook(
         logger.warning("Samsara webhook: payload noto'g'ri: %s", error)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY) from error
 
-    if alert is None:
-        return {"ok": True, "ignored": True}
-
     async with AsyncSessionLocal() as session:
+        await record_webhook(session, datetime.now(UTC))
+        if alert is None:
+            return {"ok": True, "ignored": True}
         result = await ingest_alert(session, alert, owner_chat_id=settings.owner_telegram_id)
 
     if result.delivery_ids:

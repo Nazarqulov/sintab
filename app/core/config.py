@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     app_host: str = "0.0.0.0"
     app_port: int = 8000
     telegram_webhook_secret_path: str = "telegram-webhook"
+    backup_dir: str = "/backups"
+    # Kunlik backup'ni Owner'ga Telegram orqali ham yuborish (fayl shaxsiy ma'lumotlarni o'z ichiga oladi).
+    backup_send_to_owner: bool = False
     log_level: str = "INFO"
     env: str = "development"
 

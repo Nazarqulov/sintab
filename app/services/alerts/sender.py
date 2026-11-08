@@ -64,6 +64,10 @@ class AlertSender:
             with contextlib.suppress(asyncio.CancelledError):
                 await self._task
 
+    @property
+    def queue_size(self) -> int:
+        return self._queue.qsize()
+
     def enqueue(self, delivery_ids: list[int]) -> None:
         for delivery_id in delivery_ids:
             self._queue.put_nowait(delivery_id)

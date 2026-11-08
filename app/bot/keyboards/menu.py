@@ -27,16 +27,12 @@ SECTIONS = [
     Section("alerts", (Permission.VIEW_ALERTS,)),
     Section("vehicles", (Permission.VIEW_VEHICLES,)),
     Section("drivers", (Permission.VIEW_VEHICLES,)),
-    Section("hos", (Permission.VIEW_VEHICLES,)),
-    Section("fuel", (Permission.VIEW_VEHICLES,)),
-    Section("docs", (Permission.VIEW_VEHICLES,)),
-    Section("chat"),
     Section("reports", (Permission.VIEW_REPORTS,)),
     Section("settings"),
     Section("profile"),
     Section("admin", ADMIN_PERMISSIONS),
 ]
-REPLY_SECTIONS = ("alerts", "vehicles", "chat", "docs", "reports", "menu")
+REPLY_SECTIONS = ("alerts", "vehicles", "reports", "settings", "menu")
 
 
 class MenuAction(CallbackData, prefix="mn"):

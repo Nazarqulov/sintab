@@ -10,3 +10,12 @@ class Registration(StatesGroup):
 
 class DepotCreation(StatesGroup):
     name = State()
+
+
+class BrowseSearch(StatesGroup):
+    vehicle = State()
+    driver = State()
+
+
+class BroadcastFlow(StatesGroup):
+    message = State()
