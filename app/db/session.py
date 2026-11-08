@@ -1,6 +1,7 @@
 from collections.abc import AsyncGenerator
 from enum import Enum
 
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool
@@ -22,6 +23,14 @@ _engine_options = (
     {"poolclass": NullPool} if settings.database_url.startswith("sqlite") else {"pool_pre_ping": True}
 )
 engine = create_async_engine(settings.database_url, **_engine_options)
+
+if settings.database_url.startswith("sqlite"):
+    # SQLite standartda FK'larni tekshirmaydi — testlar Postgres'dagi ON DELETE xatti-harakatini ko'rishi uchun.
+    @event.listens_for(engine.sync_engine, "connect")
+    def _enable_sqlite_foreign_keys(dbapi_connection, _record) -> None:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 

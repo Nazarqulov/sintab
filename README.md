@@ -2,8 +2,25 @@
 
 To'liq texnik topshiriq: [TZ.md](TZ.md).
 
-**Holat:** 2-bosqich tayyor — Samsara webhook, alert yuborish, routing, inline tugmalar.
-Keyingilari: ro'yxatdan o'tish/RBAC oqimi (3), menyu/i18n/hisobotlar (4), deploy (5).
+**Holat:** 3-bosqich tayyor — Samsara webhook va alertlar (2), ro'yxatdan o'tish, RBAC,
+foydalanuvchi va depo boshqaruvi (3). Keyingilari: menyu/i18n/hisobotlar (4), deploy (5).
+
+## Foydalanuvchilar va huquqlar
+
+- `/start` — ro'yxatdan o'tish: ism → telefon (faqat o'z raqami, tugma orqali) → lavozim → depo.
+  Telefon Samsara'dagi haydovchi raqamiga mos kelsa, avtomatik bog'lanadi.
+- So'rov barcha Owner/Admin'larga keladi: **Tasdiqlash** (rol → depolar) yoki **Rad etish**
+  (rad etilgan foydalanuvchi bloklanadi — qayta spam qila olmaydi; `/users`dan tiklash mumkin).
+  Tasdiqlanmaguncha foydalanuvchi hech narsani ko'rmaydi.
+- `/users` — ro'yxat, rol, depolar, bloklash, o'chirish; Owner uchun individual huquqlar.
+- `/depots` — depolarni qo'shish/o'chirish. `/cancel` — joriy amalni bekor qilish.
+- Ierarxiya: Owner'ga hech kim tega olmaydi; Admin'ni faqat Owner boshqaradi va tayinlaydi;
+  hech kim o'zini o'zgartira olmaydi. Har amal `audit_log`ga yoziladi.
+- Har handler `flags={"permission": ...}` bilan belgilanadi; belgilanmaganiga faqat faol
+  foydalanuvchi kiradi. Guruhlarda begonalarga javob berilmaydi. Anti-spam: 5 ta tezkor, keyin 1/s.
+
+Owner botga avval `/start` yozishi kerak — aks holda Telegram so'rov va alertlarni unga
+yetkaza olmaydi.
 
 ## Ishga tushirish (lokal)
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import BigInteger, DateTime, String
+from sqlalchemy import BigInteger, DateTime, ForeignKey, String
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -45,12 +45,15 @@ class User(Base):
     language: Mapped[str] = mapped_column(String(8), default="uz")
     timezone: Mapped[str] = mapped_column(String(64), default="America/Chicago")
     muted_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Driver roli uchun: Samsara'dagi haydovchi yozuvi (telefon bo'yicha avtomatik bog'lanadi).
+    driver_id: Mapped[int | None] = mapped_column(ForeignKey("drivers.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    depots: Mapped[list["Depot"]] = relationship(secondary=user_depots, back_populates="users")
+    depots: Mapped[list["Depot"]] = relationship(secondary=user_depots, back_populates="users", lazy="selectin")
+    driver: Mapped["Driver | None"] = relationship(lazy="selectin")
     permission_overrides: Mapped[list["PermissionOverride"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",

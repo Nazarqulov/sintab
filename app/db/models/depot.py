@@ -14,7 +14,9 @@ class Depot(Base):
     name: Mapped[str] = mapped_column(String(128), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    users: Mapped[list["User"]] = relationship(secondary=user_depots, back_populates="depots")
-    vehicles: Mapped[list["Vehicle"]] = relationship(back_populates="depot")
-    drivers: Mapped[list["Driver"]] = relationship(back_populates="depot")
-    groups: Mapped[list["Group"]] = relationship(back_populates="depot")
+    # passive_deletes: depo o'chganda bog'liq yozuvlarni baza o'zi (ON DELETE) hal qiladi —
+    # ORM ularni async rejimda yuklashga urinmaydi.
+    users: Mapped[list["User"]] = relationship(secondary=user_depots, back_populates="depots", passive_deletes=True)
+    vehicles: Mapped[list["Vehicle"]] = relationship(back_populates="depot", passive_deletes=True)
+    drivers: Mapped[list["Driver"]] = relationship(back_populates="depot", passive_deletes=True)
+    groups: Mapped[list["Group"]] = relationship(back_populates="depot", passive_deletes=True)
