@@ -68,6 +68,23 @@ def test_dynamic_key_families_are_translated():
     assert not missing, missing
 
 
+def test_webapp_frontend_keys_are_translated():
+    source = (APP_DIR / "webapp" / "app.js").read_text(encoding="utf-8")
+    keys = set(re.findall(r"""["'`]((?:webapp|docs|alert|role|status|reports)\.[a-z_]+(?:\.[a-z_]+)*)["'`]""", source))
+    families = {
+        "webapp.tab": ("home", "alerts", "map", "fleet", "docs", "reports", "users"),
+        "webapp.filter": ("open", "new", "resolved", "all"),
+        "webapp.severity": ("any", "critical", "warning", "info"),
+        "webapp.status": ("new", "acknowledged", "resolved"),
+        "webapp.fleet": ("vehicles", "drivers", "hos", "fuel"),
+        "webapp.docs": ("company", "expiring", "all", "mine", "upload"),
+    }
+    keys |= {f"{prefix}.{name}" for prefix, names in families.items() for name in names}
+    assert len(keys) > 60  # naqsh haqiqatan kalitlarni topayotganiga ishonch
+    missing = sorted(key for key in keys if key not in CATALOG[DEFAULT_LANGUAGE])
+    assert not missing, missing
+
+
 def test_fallbacks():
     assert t("common.back", "xx") == t("common.back", "uz")
     assert t("no.such.key", "ru") == "no.such.key"

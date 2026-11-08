@@ -4,10 +4,9 @@ Samsara alertlarini Telegram guruhlari va xodimlarga yetkazadigan, ularni qabul 
 hisobot va boshqaruvni bitta botda jamlaydigan tizim. Til: o'zbek, rus, ingliz.
 To'liq texnik topshiriq: [TZ.md](TZ.md).
 
-**Holat:** 4-bosqich davom etmoqda — 4.1 (til, menyu), 4.2 (guruhlar, routing, digest,
-eskalatsiya), 4.3 (ko'rish, hisobotlar, admin, monitoring, backup), 4.4 (logistika: HOS,
-yoqilg'i, hujjatlar, eslatmalar, smena xulosasi), 4.5 (ichki chat) tayyor. Keyingilari:
-4.6 Mini App, 5 — deploy.
+**Holat:** 4-bosqich tayyor — 4.1 (til, menyu), 4.2 (guruhlar, routing, digest, eskalatsiya),
+4.3 (ko'rish, hisobotlar, admin, monitoring, backup), 4.4 (logistika: HOS, yoqilg'i, hujjatlar,
+eslatmalar, smena xulosasi), 4.5 (ichki chat), 4.6 (Mini App). Keyingisi: 5 — deploy.
 
 ## Asosiy buyruqlar
 
@@ -83,6 +82,20 @@ Chegara va soatlar `/admin` → ⚙️ orqali o'zgartiriladi (0 yoki -1 — o'ch
 - Kim kimga yoza oladi: xodimlar o'zaro erkin; haydovchi — o'z deposiga xizmat qiladigan xodimga
   (Viewer'dan tashqari); haydovchilar o'zaro yozishmaydi; bloklangan/tasdiqlanmaganlar — hech kimga.
 - Haydovchi kartasida "💬 Yozish" tugmasi bor. Yozishmalar `chat_messages` jadvalida saqlanadi (audit).
+
+## Mini App (web ilova)
+
+Bot ichida ochiladigan ilova: `/app/` (frontend, build bosqichisiz) va `/api/app/*` (API).
+
+- **Bo'limlar (rol bo'yicha):** bosh sahifa, alertlar (qabul qilish, biriktirish, sabab bilan yopish),
+  xarita, park (mashinalar, haydovchilar, HOS, yoqilg'i), hujjatlar (ko'rish, yuklash, chatga yuborish),
+  hisobotlar (Excel/PDF/CSV chatga keladi), xodimlar (tasdiqlash, rol, depo, bloklash).
+- **Xavfsizlik:** har so'rov `Authorization: tma <initData>` bilan keladi; imzo bot token'i bilan
+  tekshiriladi (24 soat amal qiladi). RBAC va ko'rish doirasi bot bilan bir xil servislardan olinadi.
+- **Yoqish:** `PUBLIC_BASE_URL` `https://` bilan boshlanishi kerak — Telegram faqat HTTPS'ni qabul qiladi.
+  Shunda bot menyu tugmasi va `/menu`da "📱 Ilovani ochish" paydo bo'ladi.
+- Fayllar Telegram'da saqlanadi: yuklanganda nusxasi foydalanuvchining bot bilan chatiga ham tushadi.
+  Bitta fayl — 20 MB gacha. Xarita OpenStreetMap va Leaflet (unpkg.com) orqali ishlaydi.
 
 ## Monitoring
 

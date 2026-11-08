@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     env: str = "development"
 
+    @property
+    def webapp_url(self) -> str | None:
+        """Mini App manzili — Telegram faqat HTTPS'ni qabul qiladi."""
+        if self.public_base_url and self.public_base_url.startswith("https://"):
+            return f"{self.public_base_url.rstrip('/')}/app/"
+        return None
+
 
 @lru_cache
 def get_settings() -> Settings:

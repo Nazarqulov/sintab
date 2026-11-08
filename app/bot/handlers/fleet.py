@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.keyboards.menu import home_button
 from app.core.config import settings
-from app.core.i18n import t
+from app.core.i18n import LocalizedError, t
 from app.core.permissions import Permission
 from app.db.models import User, UserRole, Vehicle
 from app.services.app_settings import get_setting
@@ -46,22 +46,34 @@ async def fetch_clocks(driver_samsara_ids: list[str] | None = None) -> list[HosC
     return [clock for clock in (parse_hos_clock(i) for i in items) if clock]
 
 
-async def hos_text(session: AsyncSession, user: User, lang: str) -> str:
+class HosUnavailable(LocalizedError):
+    pass
+
+
+async def load_hos(session: AsyncSession, user: User) -> tuple[list[HosClock], int]:
+    """Foydalanuvchi doirasidagi HOS soatlari (eng tig'izi birinchi) va ogohlantirish chegarasi (ms)."""
     if not settings.samsara_api_token:
-        return t("fleet.no_token", lang)
+        raise HosUnavailable("fleet.no_token")
     allowed = {d.samsara_id: d for d in (await session.scalars(await scoped_drivers(user))).all()}
     if user.role == UserRole.DRIVER and not allowed:
-        return t("fleet.driver_not_linked", lang)
+        raise HosUnavailable("fleet.driver_not_linked")
     try:
         clocks = await fetch_clocks(list(allowed) if user.role == UserRole.DRIVER else None)
     except (SamsaraAPIError, OSError) as error:
         logger.warning("HOS olinmadi: %s", error)
-        return t("fleet.samsara_error", lang)
+        raise HosUnavailable("fleet.samsara_error") from error
     # Cheklovsiz foydalanuvchi bazaga hali sinxronlanmagan haydovchilarni ham ko'rsin.
     if user.role == UserRole.DRIVER or await depot_scope(user) is not None:
         clocks = [c for c in clocks if c.driver_samsara_id in allowed]
-    threshold = (await get_setting(session, "hos_warning_minutes")) * 60_000
     clocks.sort(key=lambda c: (c.tightest_ms is None, c.tightest_ms or 0))
+    return clocks, (await get_setting(session, "hos_warning_minutes")) * 60_000
+
+
+async def hos_text(session: AsyncSession, user: User, lang: str) -> str:
+    try:
+        clocks, threshold = await load_hos(session, user)
+    except HosUnavailable as error:
+        return error.render(lang)
     lines = [t("fleet.hos_title", lang, count=len(clocks)), ""]
     for clock in clocks[:MAX_ROWS]:
         icon = "⚠️" if threshold and clock.tightest_ms is not None and clock.tightest_ms <= threshold else "🟢"

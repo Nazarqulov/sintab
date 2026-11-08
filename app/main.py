@@ -4,12 +4,14 @@ import itertools
 import logging
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 
 from aiogram.exceptions import TelegramAPIError
-from aiogram.types import FSInputFile
+from aiogram.types import FSInputFile, MenuButtonWebApp, WebAppInfo
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
-from app.api import samsara_webhook, telegram_webhook
+from app.api import samsara_webhook, telegram_webhook, webapp
 from app.bot.bot_instance import bot, dp
 from app.bot.commands import setup_default_commands
 from app.core.config import settings
@@ -149,6 +151,8 @@ async def telegram_startup() -> None:
                 url = f"{settings.public_base_url.rstrip('/')}/webhook/telegram/{settings.telegram_webhook_secret_path}"
                 await bot.set_webhook(url, allowed_updates=dp.resolve_used_update_types())
             await setup_default_commands(bot)
+            if settings.webapp_url:
+                await bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Fleet", web_app=WebAppInfo(url=settings.webapp_url)))
             break
         except TelegramAPIError as error:
             delay = min(5 * 2**attempt, 300)
@@ -161,6 +165,8 @@ async def telegram_startup() -> None:
 app = FastAPI(title="Samsara Fleet Bot", lifespan=lifespan)
 app.include_router(telegram_webhook.router)
 app.include_router(samsara_webhook.router)
+app.include_router(webapp.router)
+app.mount("/app", StaticFiles(directory=Path(__file__).parent / "webapp", html=True), name="webapp")
 
 
 @app.get("/health")

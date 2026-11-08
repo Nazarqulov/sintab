@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>Fleet</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="app.css?v=1">
+</head>
+<body>
+  <header id="topbar">
+    <div class="title" id="title">Fleet</div>
+    <div class="who" id="who"></div>
+  </header>
+  <main id="view"><div class="center muted" id="boot">…</div></main>
+  <nav id="tabs"></nav>
+  <div id="sheet" class="sheet hidden" role="dialog" aria-modal="true">
+    <div class="sheet-backdrop" data-close></div>
+    <div class="sheet-body">
+      <button class="sheet-close" data-close aria-label="close">✕</button>
+      <div id="sheet-content"></div>
+    </div>
+  </div>
+  <div id="toast" class="toast hidden"></div>
+  <script src="app.js?v=1"></script>
+</body>
+</html>

@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 
 from aiogram.filters.callback_data import CallbackData
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 
+from app.core.config import settings
 from app.core.i18n import t
 from app.core.permissions import Permission
 from app.db.models import User
@@ -65,7 +66,10 @@ async def main_inline_menu(user: User) -> InlineKeyboardMarkup:
         InlineKeyboardButton(text=section_label(key, user.language), callback_data=MenuAction(section=key).pack())
         for key in keys
     ]
-    return InlineKeyboardMarkup(inline_keyboard=[buttons[i:i + 2] for i in range(0, len(buttons), 2)])
+    rows = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+    if settings.webapp_url:
+        rows.append([InlineKeyboardButton(text=t("webapp.menu_button", user.language), web_app=WebAppInfo(url=settings.webapp_url))])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def home_button(lang: str | None) -> InlineKeyboardButton:

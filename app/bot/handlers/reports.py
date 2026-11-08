@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.bot.keyboards.menu import home_button
 from app.core.i18n import t
 from app.core.permissions import Permission
-from app.db.models import Alert, AlertDelivery, AlertStatus, AuditLog, DeliveryStatus, Group, User, UserStatus
+from app.db.models import Alert, AlertDelivery, AlertStatus, DeliveryStatus, Group, User, UserStatus
 from app.services import reports as svc
 from app.services.alerts.formatter import safe_zone
 from app.services.users import has_permission
@@ -20,7 +20,7 @@ from app.services.users import has_permission
 router = Router(name="reports")
 
 VIEW_REPORTS = {"permission": Permission.VIEW_REPORTS}
-FORMATS = {"xlsx": "📊 Excel", "pdf": "📄 PDF", "csv": "🧾 CSV"}
+FORMATS = dict(zip(svc.EXPORT_FORMATS, ("📊 Excel", "📄 PDF", "🧾 CSV")))
 
 
 class ReportAction(CallbackData, prefix="rp"):
@@ -29,10 +29,7 @@ class ReportAction(CallbackData, prefix="rp"):
 
 
 def _period_label(period: str, lang: str, user: User) -> str:
-    start, end = svc.period_range(period, user.timezone, datetime.now(UTC))
-    if period in ("today", "yesterday"):
-        return f"{t(f'reports.period.{period}', lang)} ({start:%d.%m.%Y})"
-    return f"{t(f'reports.period.{period}', lang)} ({start:%d.%m}–{end:%d.%m.%Y})"
+    return svc.period_label(period, lang, user.timezone, datetime.now(UTC))
 
 
 async def _markup(user: User, lang: str, period: str) -> InlineKeyboardMarkup:
@@ -76,20 +73,7 @@ async def cb_report(callback: CallbackQuery, callback_data: ReportAction, sessio
         await callback.answer(t("access.no_permission", lang), show_alert=True)
         return
     await callback.answer(t("reports.preparing", lang))
-    start, end = svc.period_range(period, user.timezone, datetime.now(UTC))
-    alerts = await svc.load_alerts(session, user, start, end)
-    data = svc.build_report(alerts)
-    rows = svc.export_rows(alerts, user.timezone, lang)
-    title = f"{t('reports.file_title', lang)} — {_period_label(period, lang, user)}"
-    stamp = f"{start:%Y%m%d}-{end:%Y%m%d}"
-    if callback_data.fmt == "xlsx":
-        content, filename = svc.to_xlsx(rows, data, lang, title), f"alerts_{stamp}.xlsx"
-    elif callback_data.fmt == "pdf":
-        content, filename = svc.to_pdf(rows, data, lang, title), f"alerts_{stamp}.pdf"
-    else:
-        content, filename = svc.to_csv(rows, lang), f"alerts_{stamp}.csv"
-    session.add(AuditLog(actor_id=user.id, action="report_export", details={"format": callback_data.fmt, "period": period, "rows": len(rows)}))
-    await session.commit()
+    content, filename, title = await svc.build_export(session, user, period, callback_data.fmt, lang, datetime.now(UTC))
     await callback.message.answer_document(BufferedInputFile(content, filename=filename), caption=title)
 
 

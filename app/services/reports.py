@@ -12,7 +12,7 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.i18n import t
-from app.db.models import Alert, AlertStatus, User
+from app.db.models import Alert, AlertStatus, AuditLog, User
 from app.services.alerts.formatter import as_utc, safe_zone, type_label
 from app.services.scope import scoped_alerts
 from app.services.users import display_name
@@ -20,6 +20,7 @@ from app.services.users import display_name
 logger = logging.getLogger(__name__)
 
 PERIODS = ("today", "yesterday", "7d", "30d")
+EXPORT_FORMATS = ("xlsx", "pdf", "csv")
 PDF_MAX_ROWS = 400
 FONT_CANDIDATES = [
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
@@ -316,3 +317,31 @@ def to_pdf(rows: list[dict], data: ReportData, lang: str, title: str) -> bytes:
         title=title,
     ).build(story)
     return buffer.getvalue()
+
+
+def period_label(period: str, lang: str, tz_name: str, now: datetime) -> str:
+    start, end = period_range(period, tz_name, now)
+    if period in ("today", "yesterday"):
+        return f"{t(f'reports.period.{period}', lang)} ({start:%d.%m.%Y})"
+    return f"{t(f'reports.period.{period}', lang)} ({start:%d.%m}–{end:%d.%m.%Y})"
+
+
+async def build_export(
+    session: AsyncSession, user: User, period: str, fmt: str, lang: str, now: datetime
+) -> tuple[bytes, str, str]:
+    """Bot va Mini App uchun umumiy: (fayl, fayl nomi, sarlavha); eksport audit log'ga yoziladi."""
+    start, end = period_range(period, user.timezone, now)
+    alerts = await load_alerts(session, user, start, end)
+    data = build_report(alerts)
+    rows = export_rows(alerts, user.timezone, lang)
+    title = f"{t('reports.file_title', lang)} — {period_label(period, lang, user.timezone, now)}"
+    stamp = f"{start:%Y%m%d}-{end:%Y%m%d}"
+    if fmt == "xlsx":
+        content, filename = to_xlsx(rows, data, lang, title), f"alerts_{stamp}.xlsx"
+    elif fmt == "pdf":
+        content, filename = to_pdf(rows, data, lang, title), f"alerts_{stamp}.pdf"
+    else:
+        content, filename = to_csv(rows, lang), f"alerts_{stamp}.csv"
+    session.add(AuditLog(actor_id=user.id, action="report_export", details={"format": fmt, "period": period, "rows": len(rows)}))
+    await session.commit()
+    return content, filename, title
